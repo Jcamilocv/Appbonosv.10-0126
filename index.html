@@ -1,609 +1,595 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf610
-{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 AppleColorEmoji;\f2\fnil\fcharset0 LucidaGrande;
-\f3\fnil\fcharset77 ZapfDingbatsITC;}
-{\colortbl;\red255\green255\blue255;}
-{\*\expandedcolortbl;;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tips Bonos | Versión Local 2026</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-\f0\fs24 \cf0 <!DOCTYPE html>\
-<html lang="es">\
-<head>\
-    <meta charset="UTF-8">\
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">\
-    <title>Money Tips Bonos | Versi\'f3n Local 2026</title>\
-    <!-- Tailwind CSS -->\
-    <script src="https://cdn.tailwindcss.com"></script>\
-    <!-- Google Fonts -->\
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">\
-    \
-    <script>\
-        tailwind.config = \{\
-            theme: \{\
-                extend: \{\
-                    colors: \{\
-                        background: '#0A192F',\
-                        card: '#112240',\
-                        primary: '#64FFDA',\
-                        secondary: '#8892b0',\
-                        text: '#ccd6f6',\
-                        success: '#10b981',\
-                        warning: '#f59e0b',\
-                        danger: '#ef4444'\
-                    \},\
-                    fontFamily: \{\
-                        sans: ['Inter', 'sans-serif'],\
-                        mono: ['JetBrains Mono', 'monospace'],\
-                    \}\
-                \}\
-            \}\
-        \}\
-    </script>\
-\
-    <style>\
-        body \{ background-color: #0A192F; color: #ccd6f6; \}\
-        ::-webkit-scrollbar \{ width: 8px; \}\
-        ::-webkit-scrollbar-track \{ background: #0A192F; \}\
-        ::-webkit-scrollbar-thumb \{ background: #112240; border-radius: 4px; \}\
-        ::-webkit-scrollbar-thumb:hover \{ background: #64FFDA; \}\
-        .fade-in \{ animation: fadeIn 0.3s ease-in; \}\
-        @keyframes fadeIn \{ from \{ opacity: 0; transform: translateY(10px); \} to \{ opacity: 1; transform: translateY(0); \} \}\
-        .input-dark \{\
-            background-color: #1d2d50;\
-            border: 1px solid #233554;\
-            color: #e6f1ff;\
-            transition: all 0.2s;\
-        \}\
-        .input-dark:focus \{\
-            border-color: #64FFDA;\
-            box-shadow: 0 0 0 1px #64FFDA;\
-            outline: none;\
-        \}\
-        .input-dark::-webkit-calendar-picker-indicator \{ filter: invert(1); cursor: pointer; \}\
-        .rotate-icon \{ transition: transform 0.3s ease; \}\
-        .rotate-icon.open \{ transform: rotate(180deg); \}\
-    </style>\
-\
-    <script>\
-        // =================================================================\
-        // 
-\f1 \uc0\u55357 \u56510 
-\f0  MOTOR DE BASE DE DATOS LOCAL (LOCALSTORAGE)\
-        // =================================================================\
-\
-        const DB_KEY = 'money_tips_data_v2';\
-        let currentUser = null;\
-        let appData = \{ users: \{\} \}; \
-\
-        function loadDB() \{\
-            // Migraci\'f3n\
-            const oldData = localStorage.getItem('money_tips_data_v1');\
-            if (oldData && !localStorage.getItem(DB_KEY)) \{\
-                localStorage.setItem(DB_KEY, oldData);\
-            \}\
-\
-            const stored = localStorage.getItem(DB_KEY);\
-            if (stored) \{\
-                try \{\
-                    appData = JSON.parse(stored);\
-                \} catch(e) \{\
-                    console.error("Error cargando datos", e);\
-                    appData = \{ users: \{\} \};\
-                \}\
-            \}\
-            \
-            // Recuperar sesi\'f3n\
-            const sessionUser = localStorage.getItem('money_tips_session');\
-            if (sessionUser && appData.users[sessionUser]) \{\
-                currentUser = appData.users[sessionUser].profile;\
-                // SANADOR DE DATOS: Asegurar que todos los bonos tengan ID\
-                const userData = appData.users[sessionUser];\
-                if (userData.bonuses) \{\
-                    userData.bonuses.forEach((b, index) => \{\
-                        if (!b.id) b.id = `legacy_$\{Date.now()\}_$\{index\}`;\
-                    \});\
-                    saveDB(true); // Guardar IDs reparados silenciosamente\
-                \}\
-                initListeners(); \
-            \} else \{\
-                document.getElementById('auth-modal').classList.remove('hidden');\
-                document.getElementById('loading-screen').classList.add('hidden');\
-            \}\
-        \}\
-\
-        // Guardar datos (Con opci\'f3n de forzar render)\
-        function saveDB(forceRender = false) \{\
-            localStorage.setItem(DB_KEY, JSON.stringify(appData));\
-            renderApp(forceRender);\
-        \}\
-\
-        function getUserData() \{\
-            if (!currentUser) return null;\
-            if (!appData.users[currentUser.uid]) \{\
-                appData.users[currentUser.uid] = \{ profile: currentUser, bonuses: [], betfair: null \};\
-            \}\
-            return appData.users[currentUser.uid];\
-        \}\
-\
-        // --- AUTH ---\
-        \
-        window.actions_login = () => \{\
-            const email = document.getElementById('login-email').value;\
-            const pass = document.getElementById('login-pass').value;\
-            const errorEl = document.getElementById('auth-error');\
-            const userId = btoa(email); \
-            if (appData.users[userId] && appData.users[userId].profile.password === pass) \{\
-                currentUser = appData.users[userId].profile;\
-                localStorage.setItem('money_tips_session', userId);\
-                document.getElementById('auth-modal').classList.add('hidden');\
-                loadDB(); // Recargar para aplicar sanaci\'f3n de datos\
-            \} else \{\
-                errorEl.textContent = "Credenciales incorrectas.";\
-                errorEl.classList.remove('hidden');\
-            \}\
-        \};\
-\
-        window.actions_register = () => \{\
-            const name = document.getElementById('reg-name').value;\
-            const email = document.getElementById('reg-email').value;\
-            const pass = document.getElementById('reg-pass').value;\
-            const errorEl = document.getElementById('auth-error');\
-            if (!name || !email || !pass) \{ errorEl.textContent = "Rellena todo."; errorEl.classList.remove('hidden'); return; \}\
-            const userId = btoa(email);\
-            if (appData.users[userId]) \{ errorEl.textContent = "Este usuario ya existe."; errorEl.classList.remove('hidden'); return; \}\
-            const profile = \{ uid: userId, displayName: name, email: email, password: pass \}; \
-            appData.users[userId] = \{ profile: profile, bonuses: [], betfair: null \};\
-            currentUser = profile;\
-            localStorage.setItem('money_tips_session', userId);\
-            saveDB(true);\
-            document.getElementById('auth-modal').classList.add('hidden');\
-            initListeners();\
-        \};\
-\
-        window.actions_logout = () => \{\
-            if (confirm("\'bfCerrar sesi\'f3n?")) \{\
-                currentUser = null;\
-                localStorage.removeItem('money_tips_session');\
-                window.location.reload();\
-            \}\
-        \};\
-\
-        window.toggleAuthMode = (mode) => \{\
-            const loginForm = document.getElementById('form-login');\
-            const registerForm = document.getElementById('form-register');\
-            const btnLogin = document.getElementById('tab-login');\
-            const btnRegister = document.getElementById('tab-register');\
-            document.getElementById('auth-error').classList.add('hidden');\
-            if(mode === 'login') \{\
-                loginForm.classList.remove('hidden'); registerForm.classList.add('hidden');\
-                btnLogin.className = "flex-1 pb-2 text-primary border-b-2 border-primary font-bold";\
-                btnRegister.className = "flex-1 pb-2 text-secondary border-b-2 border-transparent";\
-            \} else \{\
-                loginForm.classList.add('hidden'); registerForm.classList.remove('hidden');\
-                btnRegister.className = "flex-1 pb-2 text-primary border-b-2 border-primary font-bold";\
-                btnLogin.className = "flex-1 pb-2 text-secondary border-b-2 border-transparent";\
-            \}\
-        \};\
-\
-        // --- L\'d3GICA DE NEGOCIO ---\
-\
-        const CONSTANTS = \{\
-            STATUS: ["No Verificada", "En Revisi\'f3n", "Verificada"],\
-            WITHDRAWAL_STATUS: ["No verificada", "Documentacion enviada", "Verificada"],\
-            STAGES: ["Deposito inicial", "Apuesta Calificatoria", "Freebet Recibida", "Rollover", "Completado"],\
-            CASINOS: [\
-                "888sport", "AdmiralBet", "Bet365", "Bet777", "Betfair Exchange", "Betfair Sportsbook", \
-                "Betsson", "Betway", "Bwin", "Casumo", "Codere", "DAZN Bet", "Eurobet", "GoldenPark", \
-                "Interwetten", "Juegging", "Kirolbet", "LeoVegas", "Lowen Play", "Luckia", "Marathonbet", \
-                "Mr Green", "OlyBet", "Paf", "Past\'f3n", "PokerStars", "Retabet", "Sportium", "TonyBet", \
-                "Versus", "William Hill", "Winamax", "Yaass Casino", "YoSports"\
-            ].sort()\
-        \};\
-\
-        let localState = \{ expandedCards: new Set() \};\
-\
-        window.actions_updateName = () => \{\
-            const newName = prompt("Nuevo nombre:", currentUser.displayName);\
-            if (newName && newName.trim()) \{\
-                const userData = getUserData();\
-                userData.profile.displayName = newName.trim();\
-                currentUser.displayName = newName.trim();\
-                saveDB(true);\
-            \}\
-        \};\
-\
-        window.actions_activate_exchange = (houseName) => \{\
-            if (!houseName) return;\
-            const userData = getUserData();\
-            userData.betfair = \{\
-                id: 'betfair',\
-                house: houseName.trim(), username: "", password: "", \
-                verificationStatus: CONSTANTS.STATUS[0],\
-                withdrawalStatus: CONSTANTS.WITHDRAWAL_STATUS[0],\
-                notes: "", deposits: 0, withdrawals: 0, transactions: [], createdAt: Date.now()\
-            \};\
-            saveDB(true);\
-        \};\
-\
-        window.actions_createBonus = (house) => \{\
-            if (!house) return;\
-            if (house === "Betfair Exchange") \{ actions_activate_exchange(house); closeModal('new-bonus-modal'); return; \}\
-            const userData = getUserData();\
-            const newBonus = \{\
-                id: Date.now().toString(),\
-                house, username: "", password: "", \
-                verificationStatus: CONSTANTS.STATUS[0], \
-                withdrawalStatus: CONSTANTS.WITHDRAWAL_STATUS[0],\
-                bonusStage: CONSTANTS.STAGES[0],\
-                notes: "", deposits: 0, withdrawals: 0, transactions: [], createdAt: Date.now()\
-            \};\
-            userData.bonuses.push(newBonus);\
-            saveDB(true);\
-            closeModal('new-bonus-modal');\
-        \};\
-\
-        // --- FUNCI\'d3N DE BORRADO ---\
-        window.actions_deleteBonus = (id) => \{\
-            try \{\
-                const userData = getUserData();\
-                if (!userData) return;\
-\
-                let houseName = "esta casa";\
-                let isExchange = false;\
-\
-                if (id === 'betfair') \{\
-                    if (!userData.betfair) return;\
-                    houseName = userData.betfair.house;\
-                    isExchange = true;\
-                \} else \{\
-                    const bonus = userData.bonuses.find(b => b.id === id);\
-                    if (!bonus) \{\
-                        alert("Error: No se encuentra el bono con ID " + id);\
-                        // Forzar refresco por si es un fantasma visual\
-                        renderApp(true);\
-                        return;\
-                    \}\
-                    houseName = bonus.house;\
-                \}\
-\
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0A192F',
+                        card: '#112240',
+                        primary: '#64FFDA',
+                        secondary: '#8892b0',
+                        text: '#ccd6f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #0A192F; color: #ccd6f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0A192F; }
+        ::-webkit-scrollbar-thumb { background: #112240; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64FFDA; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .input-dark {
+            background-color: #1d2d50;
+            border: 1px solid #233554;
+            color: #e6f1ff;
+            transition: all 0.2s;
+        }
+        .input-dark:focus {
+            border-color: #64FFDA;
+            box-shadow: 0 0 0 1px #64FFDA;
+            outline: none;
+        }
+        .input-dark::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+        .rotate-icon { transition: transform 0.3s ease; }
+        .rotate-icon.open { transform: rotate(180deg); }
+    </style>
+
+    <script>
+        // =================================================================
+        // MOTOR DE BASE DE DATOS LOCAL (LOCALSTORAGE)
+        // =================================================================
+
+        const DB_KEY = 'money_tips_data_v2';
+        let currentUser = null;
+        let appData = { users: {} };
+
+        function loadDB() {
+            // Migración
+            const oldData = localStorage.getItem('money_tips_data_v1');
+            if (oldData && !localStorage.getItem(DB_KEY)) {
+                localStorage.setItem(DB_KEY, oldData);
+            }
+
+            const stored = localStorage.getItem(DB_KEY);
+            if (stored) {
+                try {
+                    appData = JSON.parse(stored);
+                } catch(e) {
+                    console.error("Error cargando datos", e);
+                    appData = { users: {} };
+                }
+            }
+
+            // Recuperar sesión
+            const sessionUser = localStorage.getItem('money_tips_session');
+            if (sessionUser && appData.users[sessionUser]) {
+                currentUser = appData.users[sessionUser].profile;
+                // SANADOR DE DATOS: Asegurar que todos los bonos tengan ID
+                const userData = appData.users[sessionUser];
+                if (userData.bonuses) {
+                    userData.bonuses.forEach((b, index) => {
+                        if (!b.id) b.id = `legacy_${Date.now()}_${index}`;
+                    });
+                    saveDB(true); // Guardar IDs reparados silenciosamente
+                }
+                initListeners();
+            } else {
+                document.getElementById('auth-modal').classList.remove('hidden');
+                document.getElementById('loading-screen').classList.add('hidden');
+            }
+        }
+
+        // Guardar datos (Con opción de forzar render)
+        function saveDB(forceRender = false) {
+            localStorage.setItem(DB_KEY, JSON.stringify(appData));
+            renderApp(forceRender);
+        }
+
+        function getUserData() {
+            if (!currentUser) return null;
+            if (!appData.users[currentUser.uid]) {
+                appData.users[currentUser.uid] = { profile: currentUser, bonuses: [], betfair: null };
+            }
+            return appData.users[currentUser.uid];
+        }
+
+        // --- AUTH ---
+
+        window.actions_login = () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            const errorEl = document.getElementById('auth-error');
+            const userId = btoa(email);
+            if (appData.users[userId] && appData.users[userId].profile.password === pass) {
+                currentUser = appData.users[userId].profile;
+                localStorage.setItem('money_tips_session', userId);
+                document.getElementById('auth-modal').classList.add('hidden');
+                loadDB(); // Recargar para aplicar sanación de datos
+            } else {
+                errorEl.textContent = "Credenciales incorrectas.";
+                errorEl.classList.remove('hidden');
+            }
+        };
+
+        window.actions_register = () => {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            const errorEl = document.getElementById('auth-error');
+            if (!name || !email || !pass) { errorEl.textContent = "Rellena todo."; errorEl.classList.remove('hidden'); return; }
+            const userId = btoa(email);
+            if (appData.users[userId]) { errorEl.textContent = "Este usuario ya existe."; errorEl.classList.remove('hidden'); return; }
+            const profile = { uid: userId, displayName: name, email: email, password: pass };
+            appData.users[userId] = { profile: profile, bonuses: [], betfair: null };
+            currentUser = profile;
+            localStorage.setItem('money_tips_session', userId);
+            saveDB(true);
+            document.getElementById('auth-modal').classList.add('hidden');
+            initListeners();
+        };
+
+        window.actions_logout = () => {
+            if (confirm("¿Cerrar sesión?")) {
+                currentUser = null;
+                localStorage.removeItem('money_tips_session');
+                window.location.reload();
+            }
+        };
+
+        window.toggleAuthMode = (mode) => {
+            const loginForm = document.getElementById('form-login');
+            const registerForm = document.getElementById('form-register');
+            const btnLogin = document.getElementById('tab-login');
+            const btnRegister = document.getElementById('tab-register');
+            document.getElementById('auth-error').classList.add('hidden');
+            if(mode === 'login') {
+                loginForm.classList.remove('hidden'); registerForm.classList.add('hidden');
+                btnLogin.className = "flex-1 pb-2 text-primary border-b-2 border-primary font-bold";
+                btnRegister.className = "flex-1 pb-2 text-secondary border-b-2 border-transparent";
+            } else {
+                loginForm.classList.add('hidden'); registerForm.classList.remove('hidden');
+                btnRegister.className = "flex-1 pb-2 text-primary border-b-2 border-primary font-bold";
+                btnLogin.className = "flex-1 pb-2 text-secondary border-b-2 border-transparent";
+            }
+        };
+
+        // --- LÓGICA DE NEGOCIO ---
+
+        const CONSTANTS = {
+            STATUS: ["No Verificada", "En Revisión", "Verificada"],
+            WITHDRAWAL_STATUS: ["No verificada", "Documentacion enviada", "Verificada"],
+            STAGES: ["Deposito inicial", "Apuesta Calificatoria", "Freebet Recibida", "Rollover", "Completado"],
+            CASINOS: [
+                "888sport", "AdmiralBet", "Bet365", "Bet777", "Betfair Exchange", "Betfair Sportsbook",
+                "Betsson", "Betway", "Bwin", "Casumo", "Codere", "DAZN Bet", "Eurobet", "GoldenPark",
+                "Interwetten", "Juegging", "Kirolbet", "LeoVegas", "Lowen Play", "Luckia", "Marathonbet",
+                "Mr Green", "OlyBet", "Paf", "Pastón", "PokerStars", "Retabet", "Sportium", "TonyBet",
+                "Versus", "William Hill", "Winamax", "Yaass Casino", "YoSports"
+            ].sort()
+        };
+
+        let localState = { expandedCards: new Set() };
+
+        window.actions_updateName = () => {
+            const newName = prompt("Nuevo nombre:", currentUser.displayName);
+            if (newName && newName.trim()) {
+                const userData = getUserData();
+                userData.profile.displayName = newName.trim();
+                currentUser.displayName = newName.trim();
+                saveDB(true);
+            }
+        };
+
+        window.actions_activate_exchange = (houseName) => {
+            if (!houseName) return;
+            const userData = getUserData();
+            userData.betfair = {
+                id: 'betfair',
+                house: houseName.trim(), username: "", password: "",
+                verificationStatus: CONSTANTS.STATUS[0],
+                withdrawalStatus: CONSTANTS.WITHDRAWAL_STATUS[0],
+                notes: "", deposits: 0, withdrawals: 0, transactions: [], createdAt: Date.now()
+            };
+            saveDB(true);
+        };
+
+        window.actions_createBonus = (house) => {
+            if (!house) return;
+            if (house === "Betfair Exchange") { actions_activate_exchange(house); closeModal('new-bonus-modal'); return; }
+            const userData = getUserData();
+            const newBonus = {
+                id: Date.now().toString(),
+                house, username: "", password: "",
+                verificationStatus: CONSTANTS.STATUS[0],
+                withdrawalStatus: CONSTANTS.WITHDRAWAL_STATUS[0],
+                bonusStage: CONSTANTS.STAGES[0],
+                notes: "", deposits: 0, withdrawals: 0, transactions: [], createdAt: Date.now()
+            };
+            userData.bonuses.push(newBonus);
+            saveDB(true);
+            closeModal('new-bonus-modal');
+        };
+
+        // --- FUNCIÓN DE BORRADO ---
+        window.actions_deleteBonus = (id) => {
+            try {
+                const userData = getUserData();
+                if (!userData) return;
+
+                let houseName = "esta casa";
+                let isExchange = false;
+
+                if (id === 'betfair') {
+                    if (!userData.betfair) return;
+                    houseName = userData.betfair.house;
+                    isExchange = true;
+                } else {
+                    const bonus = userData.bonuses.find(b => b.id === id);
+                    if (!bonus) {
+                        alert("Error: No se encuentra el bono con ID " + id);
+                        // Forzar refresco por si es un fantasma visual
+                        renderApp(true);
+                        return;
+                    }
+                    houseName = bonus.house;
+                }
+
                 if (!confirm(`
-\f1 \uc0\u9888 \u65039 
-\f0  \'bfELIMINAR $\{houseName.toUpperCase()\}?\\n\\nEsta acci\'f3n es irreversible.`)) return;\
-                \
-                if (isExchange) \{\
-                    userData.betfair = null;\
-                \} else \{\
-                    userData.bonuses = userData.bonuses.filter(b => b.id !== id);\
-                \}\
-                \
-                saveDB(true); // TRUE fuerza el renderizado ignorando inputs activos\
-            \} catch (e) \{\
-                alert("Error al borrar: " + e.message);\
-                console.error(e);\
-            \}\
-        \};\
-\
-        window.actions_updateField = (id, field, val, isBF) => \{\
-            const userData = getUserData();\
-            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === id);\
-            if (target) \{\
-                target[field] = val;\
-                saveDB(false); // No forzar render completo para no perder foco\
-            \}\
-        \};\
-\
-        window.actions_addTransaction = (bid, isBF, type, amount, method, note, dateVal) => \{\
-            if (!amount || amount <= 0) return alert("Monto inv\'e1lido");\
-            const dateISO = dateVal ? new Date(dateVal).toISOString() : new Date().toISOString();\
-            const userData = getUserData();\
-            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === bid);\
-\
-            if (target) \{\
-                const newTrans = \{ id: Date.now().toString(), type, amount: parseFloat(amount), method, note: note || "", date: dateISO \};\
-                if (!target.transactions) target.transactions = [];\
-                target.transactions.push(newTrans);\
-                \
-                target.deposits = target.transactions.filter(x => x.type === 'deposit').reduce((a,b) => a+b.amount, 0);\
-                target.withdrawals = target.transactions.filter(x => x.type === 'withdrawal').reduce((a,b) => a+b.amount, 0);\
-                \
-                saveDB(true);\
-                closeModal('transaction-modal');\
-            \}\
-        \};\
-\
-        window.actions_deleteTransaction = (bid, isBF, tid) => \{\
-            if (!confirm("\'bfBorrar este movimiento del historial?")) return;\
-            const userData = getUserData();\
-            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === bid);\
-\
-            if (target) \{\
-                target.transactions = target.transactions.filter(t => t.id !== tid);\
-                target.deposits = target.transactions.filter(x => x.type === 'deposit').reduce((a,b) => a+b.amount, 0);\
-                target.withdrawals = target.transactions.filter(x => x.type === 'withdrawal').reduce((a,b) => a+b.amount, 0);\
-                \
-                saveDB(true);\
-                openTransactionModal(bid, isBF); \
-            \}\
-        \};\
-\
-        // --- UI & UTILS ---\
-        \
-        window.togglePasswordVisibility = (id) => \{\
-            const input = document.getElementById(`pass-$\{id\}`);\
-            const icon = document.getElementById(`pass-icon-$\{id\}`);\
-            if (input.type === 'password') \{ input.type = 'text'; icon.textContent = '
-\f1 \uc0\u55357 \u56904 
-\f0 '; \} \
-            else \{ input.type = 'password'; icon.textContent = '
-\f1 \uc0\u55357 \u56385 \u65039 
-\f0 '; \}\
-        \};\
-\
-        const formatMoney = (n) => new Intl.NumberFormat('es-ES', \{ style: 'currency', currency: 'EUR' \}).format(n||0);\
-        const escape = (s) => (s||'').replace(/[&<>"']/g, m => (\{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'\}[m]));\
-        const formatDate = (s) => s ? new Date(s).toLocaleString('es-ES', \{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'\}) : '';\
-\
-        function initListeners() \{\
-            document.getElementById('loading-screen').classList.add('hidden');\
-            renderApp(true);\
-        \}\
-\
-        // --- RENDER APP (CON PARAMETRO FORCE) ---\
-        function renderApp(force = false) \{\
-            // Si NO es forzado y estamos escribiendo, no hacemos nada para no molestar\
-            if (!force && document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;\
-\
-            const userData = getUserData();\
-            if (!userData) return;\
-\
-            document.getElementById('display-name-text').textContent = userData.profile.displayName;\
-\
-            let dep = (userData.betfair?.deposits||0), wit = (userData.betfair?.withdrawals||0);\
-            userData.bonuses.forEach(b => \{ dep += (b.deposits||0); wit += (b.withdrawals||0); \});\
-            document.getElementById('stat-deposit').innerText = formatMoney(dep);\
-            document.getElementById('stat-withdraw').innerText = formatMoney(wit);\
-            const bal = wit - dep;\
-            const balEl = document.getElementById('stat-balance');\
-            balEl.innerText = formatMoney(bal);\
-            balEl.className = `text-3xl font-bold font-mono $\{bal>=0 ? 'text-primary' : 'text-danger'\}`;\
-\
-            const bfCont = document.getElementById('betfair-container');\
-            if (!userData.betfair) \{\
-                bfCont.innerHTML = `\
-                <div class="bg-card rounded-lg p-6 text-center border border-dashed border-secondary/30">\
-                    <p class="text-white font-bold mb-4">Configura tu Exchange</p>\
-                    <div class="flex flex-col gap-3 max-w-sm mx-auto">\
+⚠️
+ ¿ELIMINAR ${houseName.toUpperCase()}?\Esta acción es irreversible.`)) return;
+
+                if (isExchange) {
+                    userData.betfair = null;
+                } else {
+                    userData.bonuses = userData.bonuses.filter(b => b.id !== id);
+                }
+
+                saveDB(true); // TRUE fuerza el renderizado ignorando inputs activos
+            } catch (e) {
+                alert("Error al borrar: " + e.message);
+                console.error(e);
+            }
+        };
+
+        window.actions_updateField = (id, field, val, isBF) => {
+            const userData = getUserData();
+            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === id);
+            if (target) {
+                target[field] = val;
+                saveDB(false); // No forzar render completo para no perder foco
+            }
+        };
+
+        window.actions_addTransaction = (bid, isBF, type, amount, method, note, dateVal) => {
+            if (!amount || amount <= 0) return alert("Monto inválido");
+            const dateISO = dateVal ? new Date(dateVal).toISOString() : new Date().toISOString();
+            const userData = getUserData();
+            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === bid);
+
+            if (target) {
+                const newTrans = { id: Date.now().toString(), type, amount: parseFloat(amount), method, note: note || "", date: dateISO };
+                if (!target.transactions) target.transactions = [];
+                target.transactions.push(newTrans);
+
+                target.deposits = target.transactions.filter(x => x.type === 'deposit').reduce((a,b) => a+b.amount, 0);
+                target.withdrawals = target.transactions.filter(x => x.type === 'withdrawal').reduce((a,b) => a+b.amount, 0);
+
+                saveDB(true);
+                closeModal('transaction-modal');
+            }
+        };
+
+        window.actions_deleteTransaction = (bid, isBF, tid) => {
+            if (!confirm("¿Borrar este movimiento del historial?")) return;
+            const userData = getUserData();
+            let target = isBF ? userData.betfair : userData.bonuses.find(b => b.id === bid);
+
+            if (target) {
+                target.transactions = target.transactions.filter(t => t.id !== tid);
+                target.deposits = target.transactions.filter(x => x.type === 'deposit').reduce((a,b) => a+b.amount, 0);
+                target.withdrawals = target.transactions.filter(x => x.type === 'withdrawal').reduce((a,b) => a+b.amount, 0);
+
+                saveDB(true);
+                openTransactionModal(bid, isBF);
+            }
+        };
+
+        // --- UI & UTILS ---
+
+        window.togglePasswordVisibility = (id) => {
+            const input = document.getElementById(`pass-${id}`);
+            const icon = document.getElementById(`pass-icon-${id}`);
+            if (input.type === 'password') { input.type = 'text'; icon.textContent = '🙈'; }
+            else { input.type = 'password'; icon.textContent = '👁'; }
+        };
+
+        const formatMoney = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n||0);
+        const escape = (s) => (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+        const formatDate = (s) => s ? new Date(s).toLocaleString('es-ES', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+
+        function initListeners() {
+            document.getElementById('loading-screen').classList.add('hidden');
+            renderApp(true);
+        }
+
+        // --- RENDER APP (CON PARAMETRO FORCE) ---
+        function renderApp(force = false) {
+            // Si NO es forzado y estamos escribiendo, no hacemos nada para no molestar
+            if (!force && document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+            const userData = getUserData();
+            if (!userData) return;
+
+            document.getElementById('display-name-text').textContent = userData.profile.displayName;
+
+            let dep = (userData.betfair?.deposits||0), wit = (userData.betfair?.withdrawals||0);
+            userData.bonuses.forEach(b => { dep += (b.deposits||0); wit += (b.withdrawals||0); });
+            document.getElementById('stat-deposit').innerText = formatMoney(dep);
+            document.getElementById('stat-withdraw').innerText = formatMoney(wit);
+            const bal = wit - dep;
+            const balEl = document.getElementById('stat-balance');
+            balEl.innerText = formatMoney(bal);
+            balEl.className = `text-3xl font-bold font-mono ${bal>=0 ? 'text-primary' : 'text-danger'}`;
+
+            const bfCont = document.getElementById('betfair-container');
+            if (!userData.betfair) {
+                bfCont.innerHTML = `
+                <div class="bg-card rounded-lg p-6 text-center border border-dashed border-secondary/30">
+                    <p class="text-white font-bold mb-4">Configura tu Exchange</p>
+                    <div class="flex flex-col gap-3 max-w-sm mx-auto">
                         <button onclick="actions_activate_exchange('Betfair Exchange')" class="bg-primary/10 text-primary p-3 rounded border border-primary/50 hover:bg-primary/20 font-bold">
-\f1 \uc0\u55356 \u57318 
-\f0  Usar Betfair Exchange</button>\
-                        <div class="flex gap-2"><input type="text" id="custom-ex" placeholder="O escribe otro..." class="input-dark flex-grow p-2 rounded text-sm"><button onclick="actions_activate_exchange(document.getElementById('custom-ex').value)" class="bg-secondary/20 text-white px-4 rounded">Activar</button></div>\
-                    </div>\
-                </div>`;\
-            \} else \{\
-                bfCont.innerHTML = createCardHTML(userData.betfair, true);\
-            \}\
-\
-            const bonCont = document.getElementById('bonus-list-container');\
-            const sortedBonuses = [...userData.bonuses].sort((x,y) => x.house.localeCompare(y.house));\
-            bonCont.innerHTML = sortedBonuses.length ? sortedBonuses.map(b => createCardHTML(b, false)).join('') : `<p class="text-center text-secondary py-10">Sin bonos activos.</p>`;\
-            \
-            localState.expandedCards.forEach(id => \{\
-                const c = document.getElementById(`content-$\{id\}`), i = document.getElementById(`icon-$\{id\}`);\
-                if(c) c.classList.remove('hidden'); if(i) i.classList.add('rotate-180');\
-            \});\
-        \}\
-\
-        function createCardHTML(data, isBF) \{\
-            const bal = (data.withdrawals||0)-(data.deposits||0);\
-            const id = isBF ? 'betfair' : data.id;\
-            const withdrawalStatus = data.withdrawalStatus || CONSTANTS.WITHDRAWAL_STATUS[0];\
-\
-            return `\
-            <div class="bg-card rounded-xl border border-secondary/10 shadow-lg overflow-hidden mb-4 transition hover:border-primary/30">\
-                <div class="p-4 flex items-center justify-between cursor-pointer select-none bg-opacity-50 hover:bg-white/5" onclick="toggleCard('$\{id\}')">\
-                    <div class="flex items-center gap-3">\
-                        <div class="w-2 h-10 $\{isBF?'bg-primary':'bg-secondary'\} rounded-full"></div>\
-                        <div><h3 class="font-bold text-lg $\{isBF?'text-primary':'text-white'\}">$\{escape(data.house)\}</h3><p class="text-xs text-secondary font-mono">$\{escape(data.username||'Sin usuario')\}</p></div>\
-                    </div>\
-                    <div class="flex items-center gap-4">\
-                        <div class="text-right hidden sm:block"><span class="text-xs text-secondary uppercase">Balance</span><p class="font-mono font-bold $\{bal>=0?'text-primary':'text-danger'\}">$\{formatMoney(bal)\}</p></div>\
-                        <svg id="icon-$\{id\}" class="w-6 h-6 text-secondary transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>\
-                    </div>\
-                </div>\
-                <div id="content-$\{id\}" class="hidden border-t border-secondary/10 bg-[#0d1b2a]">\
-                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">\
-                        <div class="space-y-4">\
-                            <div class="grid grid-cols-2 gap-4">\
-                                <div><label class="text-xs text-secondary mb-1 block">Usuario</label><input type="text" value="$\{escape(data.username)\}" onchange="actions_updateField('$\{id\}','username',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm"></div>\
-                                <div>\
-                                    <label class="text-xs text-secondary mb-1 block">Contrase\'f1a</label>\
-                                    <div class="relative">\
-                                        <input type="password" id="pass-$\{id\}" value="$\{escape(data.password)\}" onchange="actions_updateField('$\{id\}','password',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm font-mono text-secondary focus:text-white pr-10">\
-                                        <button onclick="togglePasswordVisibility('$\{id\}')" class="absolute right-2 top-2 text-secondary hover:text-white" title="Ver/Ocultar"><span id="pass-icon-$\{id\}">
-\f1 \uc0\u55357 \u56385 \u65039 
-\f0 </span></button>\
-                                    </div>\
-                                </div>\
-                            </div>\
-                            \
-                            <div class="grid grid-cols-2 gap-4">\
-                                <div>\
-                                    <label class="text-xs text-secondary mb-1 block">Verif. Cuenta (DNI)</label>\
-                                    <select onchange="actions_updateField('$\{id\}','verificationStatus',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm $\{data.verificationStatus === 'Verificada' ? 'text-success font-bold' : ''\}">\
-                                        $\{CONSTANTS.STATUS.map(s => `<option value="$\{s\}" $\{data.verificationStatus===s?'selected':''\}>$\{s\}</option>`).join('')\}\
-                                    </select>\
-                                </div>\
-                                <div>\
-                                    <label class="text-xs text-secondary mb-1 block">Verif. Retirada</label>\
-                                    <select onchange="actions_updateField('$\{id\}','withdrawalStatus',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm $\{withdrawalStatus === 'Verificada' ? 'text-success font-bold' : 'text-warning'\}">\
-                                        $\{CONSTANTS.WITHDRAWAL_STATUS.map(s => `<option value="$\{s\}" $\{withdrawalStatus===s?'selected':''\}>$\{s\}</option>`).join('')\}\
-                                    </select>\
-                                </div>\
-                            </div>\
-\
-                            <div>\
-                                <label class="text-xs text-secondary mb-1 block">Etapa Bono</label>\
-                                <select onchange="actions_updateField('$\{id\}','bonusStage',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm mb-4 $\{data.bonusStage === 'Completado' ? 'text-success font-bold' : ''\}">\
-                                    $\{CONSTANTS.STAGES.map(s => `<option value="$\{s\}" $\{data.bonusStage===s?'selected':''\}>$\{s\}</option>`).join('')\}\
-                                </select>\
-                                <label class="text-xs text-secondary mb-1 block">Notas</label>\
-                                <textarea onchange="actions_updateField('$\{id\}','notes',this.value,$\{isBF\})" class="input-dark w-full p-2 rounded text-sm h-20 placeholder-secondary/30">$\{escape(data.notes)\}</textarea>\
-                            </div>\
-                            \
-                            <div class="pt-2 text-right">\
-                                <button onclick="actions_deleteBonus('$\{id\}')" class="text-xs bg-red-900/30 text-danger border border-danger/30 px-3 py-1 rounded hover:bg-danger hover:text-white transition">\
+??
+ Usar Betfair Exchange</button>
+                        <div class="flex gap-2"><input type="text" id="custom-ex" placeholder="O escribe otro..." class="input-dark flex-grow p-2 rounded text-sm"><button onclick="actions_activate_exchange(document.getElementById('custom-ex').value)" class="bg-secondary/20 text-white px-4 rounded">Activar</button></div>
+                    </div>
+                </div>`;
+            } else {
+                bfCont.innerHTML = createCardHTML(userData.betfair, true);
+            }
+
+            const bonCont = document.getElementById('bonus-list-container');
+            const sortedBonuses = [...userData.bonuses].sort((x,y) => x.house.localeCompare(y.house));
+            bonCont.innerHTML = sortedBonuses.length ? sortedBonuses.map(b => createCardHTML(b, false)).join('') : `<p class="text-center text-secondary py-10">Sin bonos activos.</p>`;
+
+            localState.expandedCards.forEach(id => {
+                const c = document.getElementById(`content-${id}`), i = document.getElementById(`icon-${id}`);
+                if(c) c.classList.remove('hidden'); if(i) i.classList.add('rotate-180');
+            });
+        }
+
+        function createCardHTML(data, isBF) {
+            const bal = (data.withdrawals||0)-(data.deposits||0);
+            const id = isBF ? 'betfair' : data.id;
+            const withdrawalStatus = data.withdrawalStatus || CONSTANTS.WITHDRAWAL_STATUS[0];
+
+            return `
+            <div class="bg-card rounded-xl border border-secondary/10 shadow-lg overflow-hidden mb-4 transition hover:border-primary/30">
+                <div class="p-4 flex items-center justify-between cursor-pointer select-none bg-opacity-50 hover:bg-white/5" onclick="toggleCard('${id}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-10 ${isBF?'bg-primary':'bg-secondary'} rounded-full"></div>
+                        <div><h3 class="font-bold text-lg ${isBF?'text-primary':'text-white'}">${escape(data.house)}</h3><p class="text-xs text-secondary font-mono">${escape(data.username||'Sin usuario')}</p></div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block"><span class="text-xs text-secondary uppercase">Balance</span><p class="font-mono font-bold ${bal>=0?'text-primary':'text-danger'}">${formatMoney(bal)}</p></div>
+                        <svg id="icon-${id}" class="w-6 h-6 text-secondary transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+                <div id="content-${id}" class="hidden border-t border-secondary/10 bg-[#0d1b2a]">
+                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-xs text-secondary mb-1 block">Usuario</label><input type="text" value="${escape(data.username)}" onchange="actions_updateField('${id}','username',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm"></div>
+                                <div>
+                                    <label class="text-xs text-secondary mb-1 block">Contraseña</label>
+                                    <div class="relative">
+                                        <input type="password" id="pass-${id}" value="${escape(data.password)}" onchange="actions_updateField('${id}','password',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm font-mono text-secondary focus:text-white pr-10">
+                                        <button onclick="togglePasswordVisibility('${id}')" class="absolute right-2 top-2 text-secondary hover:text-white" title="Ver/Ocultar"><span id="pass-icon-${id}">
+??️
+</span></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs text-secondary mb-1 block">Verif. Cuenta (DNI)</label>
+                                    <select onchange="actions_updateField('${id}','verificationStatus',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm ${data.verificationStatus === 'Verificada' ? 'text-success font-bold' : ''}">
+                                        ${CONSTANTS.STATUS.map(s => `<option value="${s}" ${data.verificationStatus===s?'selected':''}>${s}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-secondary mb-1 block">Verif. Retirada</label>
+                                    <select onchange="actions_updateField('${id}','withdrawalStatus',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm ${withdrawalStatus === 'Verificada' ? 'text-success font-bold' : 'text-warning'}">
+                                        ${CONSTANTS.WITHDRAWAL_STATUS.map(s => `<option value="${s}" ${withdrawalStatus===s?'selected':''}>${s}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-xs text-secondary mb-1 block">Etapa Bono</label>
+                                <select onchange="actions_updateField('${id}','bonusStage',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm mb-4 ${data.bonusStage === 'Completado' ? 'text-success font-bold' : ''}">
+                                    ${CONSTANTS.STAGES.map(s => `<option value="${s}" ${data.bonusStage===s?'selected':''}>${s}</option>`).join('')}
+                                </select>
+                                <label class="text-xs text-secondary mb-1 block">Notas</label>
+                                <textarea onchange="actions_updateField('${id}','notes',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm h-20 placeholder-secondary/30">${escape(data.notes)}</textarea>
+                            </div>
+
+                            <div class="pt-2 text-right">
+                                <button onclick="actions_deleteBonus('${id}')" class="text-xs bg-red-900/30 text-danger border border-danger/30 px-3 py-1 rounded hover:bg-danger hover:text-white transition">
                                     
-\f1 \uc0\u55357 \u56785 \u65039 
-\f0  Eliminar $\{isBF ? 'Exchange' : 'Casa'\}\
-                                </button>\
-                            </div>\
-                        </div>\
-                        <div class="bg-background rounded-lg p-4 border border-secondary/10">\
-                            <div class="flex justify-between items-center mb-4"><h4 class="text-sm font-bold text-primary uppercase">Finanzas</h4><button onclick='openTransactionModal("$\{id\}", $\{isBF\})' class="text-xs bg-primary hover:bg-white text-background font-bold px-3 py-1 rounded">+ Movimiento</button></div>\
-                            <div class="grid grid-cols-2 gap-4 mb-4 text-center">\
-                                <div class="bg-card p-2 rounded"><span class="text-xs text-secondary block">Ingresos</span><span class="text-success font-mono font-bold">$\{formatMoney(data.deposits)\}</span></div>\
-                                <div class="bg-card p-2 rounded"><span class="text-xs text-secondary block">Retiros</span><span class="text-danger font-mono font-bold">$\{formatMoney(data.withdrawals)\}</span></div>\
-                            </div>\
-                            <div class="space-y-2"><p class="text-xs text-secondary mb-1">\'daltimos:</p>$\{(data.transactions || []).slice(-3).reverse().map(t => `<div class="flex justify-between text-xs p-2 bg-white/5 rounded border-l-2 $\{t.type==='deposit'?'border-success':'border-danger'\}"><span class="text-secondary">$\{formatDate(t.date)\}</span><span class="text-white">$\{formatMoney(t.amount)\}</span></div>`).join('')||'<p class="text-xs text-secondary italic">Sin movimientos</p>'\}\
-                            <button onclick='openTransactionModal("$\{id\}", $\{isBF\})' class="w-full mt-2 text-xs text-primary hover:underline text-center">Ver historial completo</button></div>\
-                        </div>\
-                    </div>\
-                </div>\
-            </div>`;\
-        \}\
-\
-        window.toggleCard = (id) => \{\
-            const c = document.getElementById(`content-$\{id\}`), i = document.getElementById(`icon-$\{id\}`);\
-            if(c.classList.contains('hidden')) \{ c.classList.remove('hidden'); localState.expandedCards.add(id); if(i) i.classList.add('rotate-180'); \}\
-            else \{ c.classList.add('hidden'); localState.expandedCards.delete(id); if(i) i.classList.remove('rotate-180'); \}\
-        \};\
-\
-        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');\
-        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');\
-        \
-        window.initNewBonusModal = () => \{\
-            document.getElementById('new-bonus-select').innerHTML = `<option value="">Selecciona...</option>` + CONSTANTS.CASINOS.filter(c=>c!=='Betfair Exchange').map(c=>`<option value="$\{c\}">$\{c\}</option>`).join('');\
-            openModal('new-bonus-modal');\
-        \};\
-\
-        let currCtx = null;\
-        window.openTransactionModal = (id, isBF) => \{\
-            currCtx = \{ id, isBF \}; openModal('transaction-modal');\
-            document.getElementById('trans-date').value = '';\
-            \
-            const userData = getUserData();\
-            const data = isBF ? userData.betfair : userData.bonuses.find(b=>b.id===id);\
-            if(!data) return;\
-            \
-            document.getElementById('trans-modal-title').innerText = `Movimientos: $\{data.house\}`;\
-            const t = [...(data.transactions||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));\
-            document.getElementById('trans-history-list').innerHTML = t.length ? t.map(x => `\
-                <div class="flex justify-between items-center p-3 bg-white/5 rounded mb-2 hover:bg-white/10 transition">\
-                    <div><div class="flex items-center gap-2"><span class="font-bold $\{x.type==='deposit'?'text-success':'text-danger'\}">$\{x.type==='deposit'?'Ingreso':'Retiro'\}</span><span class="text-xs text-secondary bg-black/30 px-2 py-0.5 rounded">$\{x.method\}</span></div><p class="text-xs text-secondary mt-1">$\{formatDate(x.date)\} $\{x.note?'| '+x.note:''\}</p></div>\
-                    <div class="text-right flex items-center gap-3"><span class="font-mono font-bold text-white">$\{formatMoney(x.amount)\}</span><button onclick="actions_deleteTransaction('$\{id\}',$\{isBF\},'$\{x.id\}')" class="text-secondary hover:text-danger bg-black/20 p-2 rounded-full">
-\f1 \uc0\u55357 \u56785 \u65039 
-\f0 </button></div>\
-                </div>`).join('') : '<p class="text-center text-secondary">Vac\'edo</p>';\
-        \};\
-\
-        window.submitTransaction = () => \{\
-            if(!currCtx) return;\
-            const [t, a, m, n, d] = ['trans-type','trans-amount','trans-method','trans-note','trans-date'].map(i=>document.getElementById(i).value);\
-            actions_addTransaction(currCtx.id, currCtx.isBF, t, a, m, n, d);\
-            document.getElementById('trans-amount').value = ''; document.getElementById('trans-note').value = '';\
-        \};\
-\
-        // --- INIT ---\
-        window.onload = loadDB;\
-\
-    </script>\
-</head>\
-<body class="antialiased font-sans text-sm md:text-base">\
-    <div id="loading-screen" class="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center"><div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-primary font-mono animate-pulse">Cargando datos locales...</p></div>\
-\
-    <div class="max-w-6xl mx-auto min-h-screen flex flex-col">\
-        <header class="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-secondary/20 p-4 shadow-2xl">\
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">\
-                <div class="flex items-center gap-3">\
-                    <div class="w-12 h-12 rounded-lg overflow-hidden border border-primary/30 relative bg-primary/10">\
-                        <img src="IMG_0782.jpg" alt="Logo" class="w-full h-full object-cover" onerror="if(this.src.endsWith('jpg'))this.src='IMG_0782.JPG';else\{this.style.display='none';this.nextElementSibling.style.display='flex'\}">\
-                        <div class="hidden w-full h-full items-center justify-center text-primary"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div>\
-                    </div>\
-                    <div>\
-                        <h1 class="text-xl font-bold text-white tracking-tight">Money Tips <span class="text-primary">Bonos</span></h1>\
+??️
+ Eliminar ${isBF ? 'Exchange' : 'Casa'}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-background rounded-lg p-4 border border-secondary/10">
+                            <div class="flex justify-between items-center mb-4"><h4 class="text-sm font-bold text-primary uppercase">Finanzas</h4><button onclick='openTransactionModal("${id}", ${isBF})' class="text-xs bg-primary hover:bg-white text-background font-bold px-3 py-1 rounded">+ Movimiento</button></div>
+                            <div class="grid grid-cols-2 gap-4 mb-4 text-center">
+                                <div class="bg-card p-2 rounded"><span class="text-xs text-secondary block">Ingresos</span><span class="text-success font-mono font-bold">${formatMoney(data.deposits)}</span></div>
+                                <div class="bg-card p-2 rounded"><span class="text-xs text-secondary block">Retiros</span><span class="text-danger font-mono font-bold">${formatMoney(data.withdrawals)}</span></div>
+                            </div>
+                            <div class="space-y-2"><p class="text-xs text-secondary mb-1">Últimos:</p>${(data.transactions || []).slice(-3).reverse().map(t => `<div class="flex justify-between text-xs p-2 bg-white/5 rounded border-l-2 ${t.type==='deposit'?'border-success':'border-danger'}"><span class="text-secondary">${formatDate(t.date)}</span><span class="text-white">${formatMoney(t.amount)}</span></div>`).join('')||'<p class="text-xs text-secondary italic">Sin movimientos</p>'}
+                            <button onclick='openTransactionModal("${id}", ${isBF})' class="w-full mt-2 text-xs text-primary hover:underline text-center">Ver historial completo</button></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        window.toggleCard = (id) => {
+            const c = document.getElementById(`content-${id}`), i = document.getElementById(`icon-${id}`);
+            if(c.classList.contains('hidden')) { c.classList.remove('hidden'); localState.expandedCards.add(id); if(i) i.classList.add('rotate-180'); }
+            else { c.classList.add('hidden'); localState.expandedCards.delete(id); if(i) i.classList.remove('rotate-180'); }
+        };
+
+        window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+        window.initNewBonusModal = () => {
+            document.getElementById('new-bonus-select').innerHTML = `<option value="">Selecciona...</option>` + CONSTANTS.CASINOS.filter(c=>c!=='Betfair Exchange').map(c=>`<option value="${c}">${c}</option>`).join('');
+            openModal('new-bonus-modal');
+        };
+
+        let currCtx = null;
+        window.openTransactionModal = (id, isBF) => {
+            currCtx = { id, isBF }; openModal('transaction-modal');
+            document.getElementById('trans-date').value = '';
+
+            const userData = getUserData();
+            const data = isBF ? userData.betfair : userData.bonuses.find(b=>b.id===id);
+            if(!data) return;
+
+            document.getElementById('trans-modal-title').innerText = `Movimientos: ${data.house}`;
+            const t = [...(data.transactions||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
+            document.getElementById('trans-history-list').innerHTML = t.length ? t.map(x => `
+                <div class="flex justify-between items-center p-3 bg-white/5 rounded mb-2 hover:bg-white/10 transition">
+                    <div><div class="flex items-center gap-2"><span class="font-bold ${x.type==='deposit'?'text-success':'text-danger'}">${x.type==='deposit'?'Ingreso':'Retiro'}</span><span class="text-xs text-secondary bg-black/30 px-2 py-0.5 rounded">${x.method}</span></div><p class="text-xs text-secondary mt-1">${formatDate(x.date)} ${x.note?'| '+x.note:''}</p></div>
+                    <div class="text-right flex items-center gap-3"><span class="font-mono font-bold text-white">${formatMoney(x.amount)}</span><button onclick="actions_deleteTransaction('${id}',${isBF},'${x.id}')" class="text-secondary hover:text-danger bg-black/20 p-2 rounded-full">
+??️
+</button></div>
+                </div>`).join('') : '<p class="text-center text-secondary">Vacío</p>';
+        };
+
+        window.submitTransaction = () => {
+            if(!currCtx) return;
+            const [t, a, m, n, d] = ['trans-type','trans-amount','trans-method','trans-note','trans-date'].map(i=>document.getElementById(i).value);
+            actions_addTransaction(currCtx.id, currCtx.isBF, t, a, m, n, d);
+            document.getElementById('trans-amount').value = ''; document.getElementById('trans-note').value = '';
+        };
+
+        // --- INIT ---
+        window.onload = loadDB;
+
+    </script>
+</head>
+<body class="antialiased font-sans text-sm md:text-base">
+    <div id="loading-screen" class="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center"><div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-primary font-mono animate-pulse">Cargando datos locales...</p></div>
+
+    <div class="max-w-6xl mx-auto min-h-screen flex flex-col">
+        <header class="sticky top-0 z-40 bg-background/90 backdrop-blur-md border-b border-secondary/20 p-4 shadow-2xl">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg overflow-hidden border border-primary/30 relative bg-primary/10">
+                        <img src="IMG_0782.jpg" alt="Logo" class="w-full h-full object-cover" onerror="if(this.src.endsWith('jpg'))this.src='IMG_0782.JPG';else{this.style.display='none';this.nextElementSibling.style.display='flex'}">
+                        <div class="hidden w-full h-full items-center justify-center text-primary"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white tracking-tight">Money Tips <span class="text-primary">Bonos</span></h1>
                         <div class="flex items-center gap-2"><p class="text-xs text-secondary font-mono cursor-pointer hover:text-white transition flex items-center gap-1" onclick="actions_updateName()"><span id="display-name-text">...</span> <span class="opacity-50 text-[10px]">
-\f2 \uc0\u9998 
-\f0 </span></p><button onclick="actions_logout()" class="text-danger hover:text-red-400 text-xs px-2" title="Salir">\uc0\u9211 </button></div>\
-                    </div>\
-                </div>\
-                <div class="flex gap-6 text-center bg-card px-6 py-2 rounded-full border border-secondary/10 shadow-inner">\
-                    <div class="hidden sm:block"><p class="text-[10px] uppercase text-secondary">Ingresos</p><p id="stat-deposit" class="font-mono font-bold text-success">\'800.00</p></div>\
-                    <div class="hidden sm:block border-r border-secondary/20 h-8"></div>\
-                    <div class="hidden sm:block"><p class="text-[10px] uppercase text-secondary">Retiros</p><p id="stat-withdraw" class="font-mono font-bold text-danger">\'800.00</p></div>\
-                    <div class="hidden sm:block border-r border-secondary/20 h-8"></div>\
-                    <div><p class="text-[10px] uppercase text-secondary">Neto</p><p id="stat-balance" class="font-mono font-bold text-white">\'800.00</p></div>\
-                </div>\
-                <button onclick="initNewBonusModal()" class="bg-primary hover:bg-emerald-400 text-background font-bold py-2 px-6 rounded-lg shadow-lg transition">+ Nuevo Bono</button>\
-            </div>\
-        </header>\
-\
-        <main class="flex-grow p-4 md:p-6 space-y-8">\
-            <section><div class="flex items-center gap-2 mb-4"><h2 class="text-lg font-bold text-white">Cuenta Maestra</h2><span class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded font-mono">EXCHANGE</span></div><div id="betfair-container" class="fade-in"></div></section>\
-            <section><div class="flex items-center justify-between mb-4"><h2 class="text-lg font-bold text-white">Bonos Activos</h2></div><div id="bonus-list-container" class="fade-in space-y-4"><div class="animate-pulse space-y-4"><div class="h-20 bg-card rounded-xl"></div></div></div></section>\
-        </main>\
-        \
-        <footer class="p-6 text-center text-xs text-secondary border-t border-secondary/10"><p>Money Tips Bonos v2.0 &copy; 2024 - Almacenamiento Local</p></footer>\
-    </div>\
-\
-    <!-- AUTH MODAL -->\
-    <div id="auth-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 fade-in">\
-        <div class="bg-card w-full max-w-sm rounded-2xl border border-secondary/20 shadow-2xl p-8 text-center relative overflow-hidden">\
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-blue-500"></div>\
-            <h2 class="text-2xl font-bold text-white mb-2">Bienvenido</h2>\
-            <p class="text-xs text-secondary mb-4">Tus datos se guardar\'e1n en este dispositivo.</p>\
-            <div class="flex border-b border-secondary/20 mb-6"><button id="tab-login" onclick="toggleAuthMode('login')" class="flex-1 pb-2 text-primary border-b-2 border-primary font-bold">Entrar</button><button id="tab-register" onclick="toggleAuthMode('register')" class="flex-1 pb-2 text-secondary border-b-2 border-transparent">Registrarme</button></div>\
-            <div id="auth-error" class="hidden bg-red-900/50 text-red-200 text-xs p-3 rounded mb-4 text-left border border-red-800"></div>\
-            <div id="form-login" class="space-y-4">\
-                <input type="email" id="login-email" placeholder="Email" class="input-dark w-full p-3 rounded-lg"><input type="password" id="login-pass" placeholder="Contrase\'f1a" class="input-dark w-full p-3 rounded-lg">\
-                <button onclick="actions_login()" class="w-full bg-primary text-background font-bold py-3 rounded-lg hover:bg-emerald-400 transition">Iniciar Sesi\'f3n</button>\
-            </div>\
-            <div id="form-register" class="space-y-4 hidden">\
-                <input type="text" id="reg-name" placeholder="Tu Nombre" class="input-dark w-full p-3 rounded-lg"><input type="email" id="reg-email" placeholder="Email" class="input-dark w-full p-3 rounded-lg"><input type="password" id="reg-pass" placeholder="Contrase\'f1a" class="input-dark w-full p-3 rounded-lg">\
-                <button onclick="actions_register()" class="w-full bg-secondary/20 text-primary border border-primary/50 font-bold py-3 rounded-lg hover:bg-primary/10 transition">Crear Cuenta</button>\
-            </div>\
-        </div>\
-    </div>\
-\
-    <!-- NEW BONUS MODAL -->\
-    <div id="new-bonus-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 fade-in">\
-        <div class="bg-card w-full max-w-md rounded-xl border border-secondary/20 shadow-2xl p-6">\
-            <h3 class="text-xl font-bold text-white mb-4">Iniciar Nuevo Bono</h3>\
-            <div class="mb-6"><label class="text-sm text-secondary mb-2 block">Selecciona Casa</label><select id="new-bonus-select" class="input-dark w-full p-3 rounded-lg text-lg"></select></div>\
-            <div class="flex justify-end gap-3"><button onclick="closeModal('new-bonus-modal')" class="text-secondary hover:text-white px-4 py-2">Cancelar</button><button onclick="actions_createBonus(document.getElementById('new-bonus-select').value)" class="bg-primary text-background font-bold px-6 py-2 rounded-lg">Crear</button></div>\
-        </div>\
-    </div>\
-\
-    <!-- TRANSACTION MODAL -->\
-    <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 fade-in">\
-        <div class="bg-card w-full max-w-2xl rounded-xl border border-secondary/20 shadow-2xl flex flex-col max-h-[90vh]">\
+✎
+</span></p><button onclick="actions_logout()" class="text-danger hover:text-red-400 text-xs px-2" title="Salir">⏻</button></div>
+                    </div>
+                </div>
+                <div class="flex gap-6 text-center bg-card px-6 py-2 rounded-full border border-secondary/10 shadow-inner">
+                    <div class="hidden sm:block"><p class="text-[10px] uppercase text-secondary">Ingresos</p><p id="stat-deposit" class="font-mono font-bold text-success">€0.00</p></div>
+                    <div class="hidden sm:block border-r border-secondary/20 h-8"></div>
+                    <div class="hidden sm:block"><p class="text-[10px] uppercase text-secondary">Retiros</p><p id="stat-withdraw" class="font-mono font-bold text-danger">€0.00</p></div>
+                    <div class="hidden sm:block border-r border-secondary/20 h-8"></div>
+                    <div><p class="text-[10px] uppercase text-secondary">Neto</p><p id="stat-balance" class="font-mono font-bold text-white">€0.00</p></div>
+                </div>
+                <button onclick="initNewBonusModal()" class="bg-primary hover:bg-emerald-400 text-background font-bold py-2 px-6 rounded-lg shadow-lg transition">+ Nuevo Bono</button>
+            </div>
+        </header>
+
+        <main class="flex-grow p-4 md:p-6 space-y-8">
+            <section><div class="flex items-center gap-2 mb-4"><h2 class="text-lg font-bold text-white">Cuenta Maestra</h2><span class="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded font-mono">EXCHANGE</span></div><div id="betfair-container" class="fade-in"></div></section>
+            <section><div class="flex items-center justify-between mb-4"><h2 class="text-lg font-bold text-white">Bonos Activos</h2></div><div id="bonus-list-container" class="fade-in space-y-4"><div class="animate-pulse space-y-4"><div class="h-20 bg-card rounded-xl"></div></div></div></section>
+        </main>
+
+        <footer class="p-6 text-center text-xs text-secondary border-t border-secondary/10"><p>Money Tips Bonos v2.0 &copy; 2024 - Almacenamiento Local</p></footer>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 fade-in">
+        <div class="bg-card w-full max-w-sm rounded-2xl border border-secondary/20 shadow-2xl p-8 text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-blue-500"></div>
+            <h2 class="text-2xl font-bold text-white mb-2">Bienvenido</h2>
+            <p class="text-xs text-secondary mb-4">Tus datos se guardarán en este dispositivo.</p>
+            <div class="flex border-b border-secondary/20 mb-6"><button id="tab-login" onclick="toggleAuthMode('login')" class="flex-1 pb-2 text-primary border-b-2 border-primary font-bold">Entrar</button><button id="tab-register" onclick="toggleAuthMode('register')" class="flex-1 pb-2 text-secondary border-b-2 border-transparent">Registrarme</button></div>
+            <div id="auth-error" class="hidden bg-red-900/50 text-red-200 text-xs p-3 rounded mb-4 text-left border border-red-800"></div>
+            <div id="form-login" class="space-y-4">
+                <input type="email" id="login-email" placeholder="Email" class="input-dark w-full p-3 rounded-lg"><input type="password" id="login-pass" placeholder="Contraseña" class="input-dark w-full p-3 rounded-lg">
+                <button onclick="actions_login()" class="w-full bg-primary text-background font-bold py-3 rounded-lg hover:bg-emerald-400 transition">Iniciar Sesión</button>
+            </div>
+            <div id="form-register" class="space-y-4 hidden">
+                <input type="text" id="reg-name" placeholder="Tu Nombre" class="input-dark w-full p-3 rounded-lg"><input type="email" id="reg-email" placeholder="Email" class="input-dark w-full p-3 rounded-lg"><input type="password" id="reg-pass" placeholder="Contraseña" class="input-dark w-full p-3 rounded-lg">
+                <button onclick="actions_register()" class="w-full bg-secondary/20 text-primary border border-primary/50 font-bold py-3 rounded-lg hover:bg-primary/10 transition">Crear Cuenta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW BONUS MODAL -->
+    <div id="new-bonus-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 fade-in">
+        <div class="bg-card w-full max-w-md rounded-xl border border-secondary/20 shadow-2xl p-6">
+            <h3 class="text-xl font-bold text-white mb-4">Iniciar Nuevo Bono</h3>
+            <div class="mb-6"><label class="text-sm text-secondary mb-2 block">Selecciona Casa</label><select id="new-bonus-select" class="input-dark w-full p-3 rounded-lg text-lg"></select></div>
+            <div class="flex justify-end gap-3"><button onclick="closeModal('new-bonus-modal')" class="text-secondary hover:text-white px-4 py-2">Cancelar</button><button onclick="actions_createBonus(document.getElementById('new-bonus-select').value)" class="bg-primary text-background font-bold px-6 py-2 rounded-lg">Crear</button></div>
+        </div>
+    </div>
+
+    <!-- TRANSACTION MODAL -->
+    <div id="transaction-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 fade-in">
+        <div class="bg-card w-full max-w-2xl rounded-xl border border-secondary/20 shadow-2xl flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-secondary/20 flex justify-between items-center"><h3 id="trans-modal-title" class="text-xl font-bold text-white">Movimientos</h3><button onclick="closeModal('transaction-modal')" class="text-secondary hover:text-white">
-\f3 \uc0\u10005 
-\f0 </button></div>\
-            <div class="p-6 overflow-y-auto custom-scrollbar flex-grow">\
-                <div class="bg-[#0d1b2a] p-4 rounded-lg border border-secondary/10 mb-6">\
-                    <h4 class="text-sm font-bold text-primary mb-3">Registrar Nuevo</h4>\
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">\
-                        <select id="trans-type" class="input-dark p-2 rounded"><option value="deposit">Ingreso (+)</option><option value="withdrawal">Retiro (-)</option></select>\
-                        <input type="number" id="trans-amount" placeholder="0.00" class="input-dark p-2 rounded font-mono">\
-                        <select id="trans-method" class="input-dark p-2 rounded"><option value="Tarjeta">Tarjeta</option><option value="PayPal">PayPal</option><option value="Bizum">Bizum</option><option value="Transferencia">Transf.</option></select>\
-                        <button onclick="submitTransaction()" class="bg-primary text-background font-bold rounded hover:bg-emerald-400 transition">A\'f1adir</button>\
-                    </div>\
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input type="datetime-local" id="trans-date" class="input-dark w-full p-2 rounded text-xs"><input type="text" id="trans-note" placeholder="Nota opcional" class="input-dark w-full p-2 rounded text-xs"></div>\
-                </div>\
-                <h4 class="text-sm font-bold text-white mb-3">Historial</h4>\
-                <div id="trans-history-list" class="space-y-2"></div>\
-            </div>\
-        </div>\
-    </div>\
-</body>\
-</html>}
+✕
+</button></div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-grow">
+                <div class="bg-[#0d1b2a] p-4 rounded-lg border border-secondary/10 mb-6">
+                    <h4 class="text-sm font-bold text-primary mb-3">Registrar Nuevo</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                        <select id="trans-type" class="input-dark p-2 rounded"><option value="deposit">Ingreso (+)</option><option value="withdrawal">Retiro (-)</option></select>
+                        <input type="number" id="trans-amount" placeholder="0.00" class="input-dark p-2 rounded font-mono">
+                        <select id="trans-method" class="input-dark p-2 rounded"><option value="Tarjeta">Tarjeta</option><option value="PayPal">PayPal</option><option value="Bizum">Bizum</option><option value="Transferencia">Transf.</option></select>
+                        <button onclick="submitTransaction()" class="bg-primary text-background font-bold rounded hover:bg-emerald-400 transition">Añadir</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3"><input type="datetime-local" id="trans-date" class="input-dark w-full p-2 rounded text-xs"><input type="text" id="trans-note" placeholder="Nota opcional" class="input-dark w-full p-2 rounded text-xs"></div>
+                </div>
+                <h4 class="text-sm font-bold text-white mb-3">Historial</h4>
+                <div id="trans-history-list" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
