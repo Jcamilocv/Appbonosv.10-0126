@@ -324,7 +324,7 @@
             const input = document.getElementById(`pass-${id}`);
             const icon = document.getElementById(`pass-icon-${id}`);
             if (input.type === 'password') { input.type = 'text'; icon.textContent = '🙈'; }
-            else { input.type = 'password'; icon.textContent = '👁'; }
+            else { input.type = 'password'; icon.textContent = '👁️'; }
         };
 
         const formatMoney = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n||0);
@@ -361,9 +361,7 @@
                 <div class="bg-card rounded-lg p-6 text-center border border-dashed border-secondary/30">
                     <p class="text-white font-bold mb-4">Configura tu Exchange</p>
                     <div class="flex flex-col gap-3 max-w-sm mx-auto">
-                        <button onclick="actions_activate_exchange('Betfair Exchange')" class="bg-primary/10 text-primary p-3 rounded border border-primary/50 hover:bg-primary/20 font-bold">
-??
- Usar Betfair Exchange</button>
+                        <button onclick="actions_activate_exchange('Betfair Exchange')" class="bg-primary/10 text-primary p-3 rounded border border-primary/50 hover:bg-primary/20 font-bold"> ⇄ Usar Betfair Exchange</button>
                         <div class="flex gap-2"><input type="text" id="custom-ex" placeholder="O escribe otro..." class="input-dark flex-grow p-2 rounded text-sm"><button onclick="actions_activate_exchange(document.getElementById('custom-ex').value)" class="bg-secondary/20 text-white px-4 rounded">Activar</button></div>
                     </div>
                 </div>`;
@@ -408,7 +406,7 @@
                                     <div class="relative">
                                         <input type="password" id="pass-${id}" value="${escape(data.password)}" onchange="actions_updateField('${id}','password',this.value,${isBF})" class="input-dark w-full p-2 rounded text-sm font-mono text-secondary focus:text-white pr-10">
                                         <button onclick="togglePasswordVisibility('${id}')" class="absolute right-2 top-2 text-secondary hover:text-white" title="Ver/Ocultar"><span id="pass-icon-${id}">
-??️
+👁️
 </span></button>
                                     </div>
                                 </div>
@@ -439,10 +437,7 @@
                             </div>
 
                             <div class="pt-2 text-right">
-                                <button onclick="actions_deleteBonus('${id}')" class="text-xs bg-red-900/30 text-danger border border-danger/30 px-3 py-1 rounded hover:bg-danger hover:text-white transition">
-                                    
-??️
- Eliminar ${isBF ? 'Exchange' : 'Casa'}
+                                <button onclick="actions_deleteBonus('${id}')" class="text-xs bg-red-900/30 text-danger border border-danger/30 px-3 py-1 rounded hover:bg-danger hover:text-white transition"> 🗑️ Eliminar ${isBF ? 'Exchange' : 'Casa'}
                                 </button>
                             </div>
                         </div>
@@ -488,9 +483,7 @@
             document.getElementById('trans-history-list').innerHTML = t.length ? t.map(x => `
                 <div class="flex justify-between items-center p-3 bg-white/5 rounded mb-2 hover:bg-white/10 transition">
                     <div><div class="flex items-center gap-2"><span class="font-bold ${x.type==='deposit'?'text-success':'text-danger'}">${x.type==='deposit'?'Ingreso':'Retiro'}</span><span class="text-xs text-secondary bg-black/30 px-2 py-0.5 rounded">${x.method}</span></div><p class="text-xs text-secondary mt-1">${formatDate(x.date)} ${x.note?'| '+x.note:''}</p></div>
-                    <div class="text-right flex items-center gap-3"><span class="font-mono font-bold text-white">${formatMoney(x.amount)}</span><button onclick="actions_deleteTransaction('${id}',${isBF},'${x.id}')" class="text-secondary hover:text-danger bg-black/20 p-2 rounded-full">
-??️
-</button></div>
+                    <div class="text-right flex items-center gap-3"><span class="font-mono font-bold text-white">${formatMoney(x.amount)}</span><button onclick="actions_deleteTransaction('${id}',${isBF},'${x.id}')" class="text-secondary hover:text-danger bg-black/20 p-2 rounded-full"> 🗑️ </button></div>
                 </div>`).join('') : '<p class="text-center text-secondary">Vacío</p>';
         };
 
